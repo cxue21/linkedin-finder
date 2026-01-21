@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+// Also remove the import at the top if it exists
 import { supabaseClient } from '@/lib/supabase';
 import { isValidEmail, isStrongPassword } from '@/lib/utils';
 
@@ -13,7 +13,8 @@ export default function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const router = useRouter();
+  // Remove line 16 (const router = useRouter();)
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
