@@ -116,7 +116,7 @@ async function parseCSV(file: File): Promise<ParseResult> {
  * Parse Excel file content (simplified - reads as plain text)
  * For production, use a library like xlsx
  */
-async function parseExcel(file: File): Promise<ParseResult> {
+async function parseExcel(_file: File): Promise<ParseResult> {
   // For MVP, we'll require users to convert Excel to CSV
   // In production, use: npm install xlsx
   return {

@@ -15,7 +15,7 @@ export default function MessageDraftModal({
   onClose,
   name,
   school,
-  linkedInUrl,
+  linkedInUrl,  // ✅ Now we'll use it!
 }: MessageDraftModalProps) {
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState(false);
@@ -27,7 +27,7 @@ export default function MessageDraftModal({
       generateDraft();
       setCopied(false);
     }
-  }, [isOpen, name, school]); // ← Only re-run when these change
+  }, [isOpen, name, school]);
 
   const generateDraft = async () => {
     setLoading(true);
@@ -89,6 +89,21 @@ Best regards`;
           <p className="mt-1 text-sm text-gray-600">
             Personalized message for {name}
           </p>
+          
+          {/* ✅ ADDED: Display LinkedIn URL */}
+          {linkedInUrl && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-xs text-gray-500">LinkedIn:</span>
+              <a
+                href={linkedInUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-teal-600 hover:text-teal-700 hover:underline"
+              >
+                {linkedInUrl}
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Content */}

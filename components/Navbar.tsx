@@ -25,7 +25,7 @@ export default function Navbar() {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange((event, session) => {
+    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
 
