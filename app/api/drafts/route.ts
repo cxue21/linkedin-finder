@@ -4,7 +4,7 @@ import type { DraftRequest, DraftResponse } from '@/types';
 export async function POST(req: NextRequest): Promise<NextResponse<DraftResponse>> {
   try {
     const body = (await req.json()) as DraftRequest;
-    const { name, school, linkedInUrl } = body;
+    const { name, school } = body;
 
     if (!name || !school) {
       return NextResponse.json(
