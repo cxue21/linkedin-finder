@@ -1,21 +1,39 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// TEMPORARY DEBUG - DELETE AFTER FIXING
-console.log('🔍 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-console.log('🔍 Anon Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// Validate required env vars
+if (!supabaseUrl) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL');
+}
+if (!supabaseAnonKey) {
+  throw new Error('Missing NEXT_PUBLIC_SUPABASE_ANON_KEY');
+}
 
-export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+// Create singleton client instances
+let clientInstance: SupabaseClient | null = null;
+let serverInstance: SupabaseClient | null = null;
 
-export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+export const supabaseClient = (() => {
+  if (!clientInstance) {
+    clientInstance = createClient(supabaseUrl, supabaseAnonKey);
+  }
+  return clientInstance;
+})();
+
+export const supabaseServer = (() => {
+  if (!serverInstance && supabaseServiceKey) {
+    serverInstance = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  }
+  return serverInstance!;
+})();
 
 export async function getClientUser() {
   const { data, error } = await supabaseClient.auth.getUser();

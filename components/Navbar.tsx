@@ -12,12 +12,23 @@ export default function Navbar() {
   const router = useRouter();
 
   useEffect(() => {
+    let mounted = true;
+
     const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      setUser(user);
-      setLoading(false);
+      try {
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
+        if (mounted) {
+          setUser(user);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Auth error:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     };
 
     getUser();
@@ -26,10 +37,15 @@ export default function Navbar() {
     const {
       data: { subscription },
     } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+      if (mounted) {
+        setUser(session?.user || null);
+      }
     });
 
-    return () => subscription?.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
