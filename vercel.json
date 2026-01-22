@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/jobs/check-timeouts",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
