@@ -2,7 +2,7 @@ import { supabaseServer } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 import type { N8nWebhookRequest, N8nWebhookResponse } from '@/types';
 
-export async function POST(req: NextRequest): Promise<NextResponse<N8nWebhookResponse>> {
+export async function POST(req: NextRequest){
   try {
     console.log('=== n8n Webhook Received ===');
     const secret = req.headers.get('x-n8n-secret');
