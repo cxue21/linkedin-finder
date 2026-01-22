@@ -6,7 +6,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<N8nWebhookRes
   try {
     // Verify webhook secret
     const secret = req.headers.get('x-n8n-secret');
-    if (secret !== process.env.N8N_WEBHOOK_SECRET) {
+    if (secret !== process.env.N8N_CALLBACK_SECRET) {
       return NextResponse.json(
         { success: false, message: 'Invalid webhook secret' },
         { status: 401 }
