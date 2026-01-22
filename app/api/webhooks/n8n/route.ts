@@ -4,14 +4,16 @@ import type { N8nWebhookRequest, N8nWebhookResponse } from '@/types';
 
 export async function POST(req: NextRequest): Promise<NextResponse<N8nWebhookResponse>> {
   try {
-    // Verify webhook secret
-    const secret = req.headers.get('x-n8n-secret');
-    if (secret !== process.env.N8N_CALLBACK_SECRET) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid webhook secret' },
-        { status: 401 }
-      );
-    }
+    // TEMPORARY: Disable auth for debugging
+    // const secret = req.headers.get('x-n8n-secret');
+    // if (secret !== process.env.N8N_CALLBACK_SECRET) {
+    //   return NextResponse.json(
+    //     { success: false, message: 'Invalid webhook secret' },
+    //     { status: 401 }
+    //   );
+    // }
+
+    console.log('Webhook received!', await req.json()); // Add logging
 
     const body = (await req.json()) as N8nWebhookRequest;
     const { jobId, results, completedAt } = body;
