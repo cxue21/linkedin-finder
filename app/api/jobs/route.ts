@@ -164,9 +164,8 @@ export async function POST(req: NextRequest) {
         }).catch((err) => console.error('n8n webhook error:', err));
       } else {
         // Mock response for local testing
-        setTimeout(() => {
-          mockN8nResponse(job.id, names);
-        }, 3000);
+        console.log('No N8N_WEBHOOK_URL, using mock data');
+        await mockN8nResponse(job.id, names);
       }
     } catch (err) {
       console.error('Error triggering n8n:', err);
