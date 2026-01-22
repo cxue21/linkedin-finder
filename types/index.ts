@@ -25,17 +25,26 @@ export interface JobResult {
   timestamp?: string;
 }
 
+export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
 export interface Job {
   id: string;
   user_id: string;
-  status: 'pending' | 'completed' | 'failed';
-  input_method: 'manual' | 'file_upload';
-  input_names: InputName[];
-  results: JobResult[];
-  error_message: string | null;
+  status: JobStatus;
+  input_method: 'manual' | 'csv';
+  input_names: Array<{ name: string; school: string }>;
+  results: Array<{
+    name: string;
+    school: string;
+    linkedInUrl: string | null;
+    confidence: number;
+  }>;
+  error_message?: string | null;
   created_at: string;
   updated_at: string;
-  completed_at: string | null;
+  completed_at?: string | null;
+  failed_at?: string | null;
+  processing_started_at?: string | null;
 }
 
 export interface CreateJobRequest {
