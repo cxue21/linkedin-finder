@@ -4,26 +4,34 @@ import type { N8nWebhookRequest, N8nWebhookResponse } from '@/types';
 
 export async function POST(req: NextRequest): Promise<NextResponse<N8nWebhookResponse>> {
   try {
-    // TEMPORARY: Disable auth for debugging
-    // const secret = req.headers.get('x-n8n-secret');
-    // if (secret !== process.env.N8N_CALLBACK_SECRET) {
-    //   return NextResponse.json(
-    //     { success: false, message: 'Invalid webhook secret' },
-    //     { status: 401 }
-    //   );
-    // }
+    console.log('=== n8n Webhook Received ===');
+    const secret = req.headers.get('x-n8n-secret');
 
-    console.log('Webhook received!', await req.json()); // Add logging
+    console.log('Received secret:', secret);
+    console.log('Expected secret:', process.env.N8N_CALLBACK_SECRET);
+    
+    if (secret !== process.env.N8N_CALLBACK_SECRET) {
+      console.log('❌ Secret mismatch!');
+      return NextResponse.json(
+        { success: false, message: 'Invalid webhook secret' },
+        { status: 401 }
+      );
+    }
 
     const body = (await req.json()) as N8nWebhookRequest;
+    console.log('Body received:', JSON.stringify(body, null, 2));
+
     const { jobId, results, completedAt } = body;
 
     if (!jobId || !results) {
+      console.log('❌ Missing fields:', { jobId, results });
       return NextResponse.json(
         { success: false, message: 'Missing required fields' },
         { status: 400 }
       );
     }
+
+    console.log('Updating job:', jobId);
 
     // Update job with results
     const { error } = await supabaseServer
@@ -44,6 +52,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<N8nWebhookRes
       );
     }
 
+    console.log('✅ Job updated successfully');
     return NextResponse.json(
       { success: true, message: 'Job updated successfully' },
       { status: 200 }
