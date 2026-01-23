@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
     // Check if this is a failure callback BEFORE parsing body
     const url = new URL(req.url);
-    const isFailure = url.searchParams.get('type') === 'failure';
+    const isFailure = req.headers.get('x-callback-type') === 'failure';
     console.log('Is failure callback?', isFailure);
 
 
