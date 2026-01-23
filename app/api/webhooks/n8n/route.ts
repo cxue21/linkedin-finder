@@ -17,6 +17,13 @@ export async function POST(req: NextRequest) {
     const isFailure = url.searchParams.get('type') === 'failure';
     console.log('Is failure callback?', isFailure);
 
+
+    // ✅ ADD THESE DEBUG LINES
+    console.log('Full URL:', req.url);
+    console.log('Query params:', url.searchParams.toString());
+    console.log('type param:', url.searchParams.get('type'));
+    console.log('Is failure callback?', isFailure);
+
     // Parse body
     const rawBody = await req.text();
     if (!rawBody || rawBody.length === 0) {
