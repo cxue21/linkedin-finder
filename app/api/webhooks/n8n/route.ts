@@ -17,32 +17,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- ADD THIS DEBUG SECTION ---
-    const rawBody = await req.text(); // Get raw text first
-    console.log('Raw body received:', rawBody);
-    console.log('Raw body length:', rawBody.length);
+    // ✅ ADD THIS: Check if this is a failure callback
+    const url = new URL(req.url);
+    const isFailure = url.searchParams.get('type') === 'failure';
     
-    if (!rawBody || rawBody.length === 0) {
-      console.log('❌ Empty body received!');
-      return NextResponse.json(
-        { success: false, message: 'Empty request body' },
-        { status: 400 }
-      );
+    const rawBody = await req.text();
+    let body = JSON.parse(rawBody);
+
+    // ✅ ADD THIS: Handle failure
+    if (isFailure) {
+      const { jobId, error } = body;
+      
+      if (!jobId) {
+        return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
+      }
+
+      await supabaseServer
+        .from('jobs')
+        .update({
+          status: 'failed',
+          error_message: error || 'Workflow failed',
+          failed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', jobId);
+
+      return NextResponse.json({ success: true, message: 'Job marked as failed' });
     }
 
-    let body;
-    try {
-      body = JSON.parse(rawBody);
-      console.log('Parsed body:', JSON.stringify(body, null, 2));
-    } catch (parseError) {
-      console.error('❌ JSON parse error:', parseError);
-      console.log('Failed to parse:', rawBody.substring(0, 200)); // First 200 chars
-      return NextResponse.json(
-        { success: false, message: 'Invalid JSON' },
-        { status: 400 }
-      );
-    }
-    // --- END DEBUG SECTION ---
 
     const { jobId, results, completedAt } = body;
 
