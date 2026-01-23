@@ -1,6 +1,5 @@
 import { supabaseServer } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
-import type { N8nWebhookRequest, N8nWebhookResponse } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
