@@ -1,3 +1,5 @@
+console.log('FAILURE ROUTE LOADED');
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -39,10 +41,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   return NextResponse.json({ 
     message: 'Failure webhook is working',
     timestamp: new Date().toISOString()
   });
-}
-// Updated Fri Jan 23 17:56:56 HKT 2026
+}// Updated Fri Jan 23 17:59:56 HKT 2026
