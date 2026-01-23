@@ -1,32 +1,40 @@
 // app/api/webhooks/n8n/failure/route.ts
-import { supabaseServer } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: NextRequest) {
   try {
+    // Verify secret
     const secret = req.headers.get('x-n8n-secret');
     if (secret !== process.env.N8N_CALLBACK_SECRET) {
+      console.error('Unauthorized: Invalid secret');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Parse body
     const body = await req.json();
-    
-    // ✅ FLEXIBLE: Accept different formats
-    const jobId = body.jobId || body.execution?.jobId || null;
+    console.log('Failure webhook received:', body);
+
+    // Extract jobId (flexible)
+    const jobId = body.jobId || body.execution?.jobId;
     const errorMessage = body.error || body.execution?.error?.message || 'Unknown error';
 
-    console.log('Failure webhook received:', { jobId, errorMessage, body });
-
     if (!jobId) {
-      console.error('No jobId found in payload:', body);
+      console.error('Missing jobId in payload:', body);
       return NextResponse.json({ 
         error: 'Missing jobId',
-        received: body 
+        receivedBody: body 
       }, { status: 400 });
     }
 
-    // Mark job as failed
-    const { error: updateError } = await supabaseServer
+    // Initialize Supabase
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Update job to failed
+    const { error: updateError } = await supabase
       .from('jobs')
       .update({
         status: 'failed',
@@ -37,13 +45,29 @@ export async function POST(req: NextRequest) {
       .eq('id', jobId);
 
     if (updateError) {
-      console.error('Failed to update job:', updateError);
+      console.error('Database update error:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: 'Job marked as failed' });
+    console.log('Job marked as failed:', jobId);
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Job marked as failed',
+      jobId 
+    });
+
   } catch (error: any) {
     console.error('Failure webhook error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message || 'Internal server error' 
+    }, { status: 500 });
   }
+}
+
+// Important: Export a dummy GET to verify route exists
+export async function GET(req: NextRequest) {
+  return NextResponse.json({ 
+    message: 'Failure webhook endpoint is working. Use POST to report failures.',
+    method: 'GET'
+  });
 }
