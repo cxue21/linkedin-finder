@@ -2,7 +2,7 @@ import { supabaseServer } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 import type { N8nWebhookRequest, N8nWebhookResponse } from '@/types';
 
-export async function POST(req: NextRequest){
+export async function POST(req: NextRequest) {
   try {
     console.log('=== n8n Webhook Received ===');
     const secret = req.headers.get('x-n8n-secret');
@@ -18,8 +18,32 @@ export async function POST(req: NextRequest){
       );
     }
 
-    const body = (await req.json()) as N8nWebhookRequest;
-    console.log('Body received:', JSON.stringify(body, null, 2));
+    // --- ADD THIS DEBUG SECTION ---
+    const rawBody = await req.text(); // Get raw text first
+    console.log('Raw body received:', rawBody);
+    console.log('Raw body length:', rawBody.length);
+    
+    if (!rawBody || rawBody.length === 0) {
+      console.log('❌ Empty body received!');
+      return NextResponse.json(
+        { success: false, message: 'Empty request body' },
+        { status: 400 }
+      );
+    }
+
+    let body;
+    try {
+      body = JSON.parse(rawBody);
+      console.log('Parsed body:', JSON.stringify(body, null, 2));
+    } catch (parseError) {
+      console.error('❌ JSON parse error:', parseError);
+      console.log('Failed to parse:', rawBody.substring(0, 200)); // First 200 chars
+      return NextResponse.json(
+        { success: false, message: 'Invalid JSON' },
+        { status: 400 }
+      );
+    }
+    // --- END DEBUG SECTION ---
 
     const { jobId, results, completedAt } = body;
 
@@ -33,7 +57,6 @@ export async function POST(req: NextRequest){
 
     console.log('Updating job:', jobId);
 
-    // Update job with results
     const { error } = await supabaseServer
       .from('jobs')
       .update({

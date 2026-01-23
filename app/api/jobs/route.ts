@@ -155,37 +155,36 @@ export async function POST(req: NextRequest) {
       })
       .eq('id', job.id);
     
-    // Call n8n webhook (existing code)
-    const webhookUrl = process.env.N8N_WEBHOOK_URL;
-    
-    if (webhookUrl) {
-      fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-n8n-secret': process.env.N8N_WEBHOOK_SECRET || '',
-        },
-        body: JSON.stringify({
-        jobId: job.id,
-        names,
-      }),
-    }).catch((err) => {
-    
-      // If webhook fails immediately, mark as failed
-    console.error('n8n webhook error:', err);
-    supabaseServer
-      .from('jobs')
-      .update({
-        status: 'failed',
-        error_message: 'Failed to trigger n8n workflow',
-        failed_at: new Date().toISOString(),
-      })
-      .eq('id', job.id);
-    });
-  } else {
-    console.log('No N8N_WEBHOOK_URL, using mock data');
-    await mockN8nResponse(job.id, names);
-  }
+    // Call n8n webhook
+      const webhookUrl = process.env.N8N_WEBHOOK_URL;
+
+      if (webhookUrl) {
+        fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-n8n-secret': process.env.N8N_WEBHOOK_SECRET || '',
+          },
+          body: JSON.stringify({
+            jobId: job.id,
+            names,
+          }),
+        }).catch((err) => {
+          // If webhook fails immediately, mark as failed
+          console.error('n8n webhook error:', err);
+          supabaseServer
+            .from('jobs')
+            .update({
+              status: 'failed',
+              error_message: 'Failed to trigger n8n workflow',
+              failed_at: new Date().toISOString(),
+            })
+            .eq('id', job.id);
+        });
+      } else {
+        console.log('No N8N_WEBHOOK_URL, using mock data');
+        await mockN8nResponse(job.id, names);
+      }
 
     return NextResponse.json(
       {

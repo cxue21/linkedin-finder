@@ -1,3 +1,4 @@
+// app/api/webhooks/n8n/failure/route.ts
 import { supabaseServer } from '@/lib/supabase';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -8,24 +9,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { jobId, error } = await req.json();
+    const body = await req.json();
+    
+    // ✅ FLEXIBLE: Accept different formats
+    const jobId = body.jobId || body.execution?.jobId || null;
+    const errorMessage = body.error || body.execution?.error?.message || 'Unknown error';
+
+    console.log('Failure webhook received:', { jobId, errorMessage, body });
 
     if (!jobId) {
-      return NextResponse.json({ error: 'Missing jobId' }, { status: 400 });
+      console.error('No jobId found in payload:', body);
+      return NextResponse.json({ 
+        error: 'Missing jobId',
+        received: body 
+      }, { status: 400 });
     }
 
     // Mark job as failed
-    await supabaseServer
+    const { error: updateError } = await supabaseServer
       .from('jobs')
       .update({
         status: 'failed',
-        error_message: error || 'n8n workflow failed',
+        error_message: errorMessage,
         failed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', jobId);
 
-    return NextResponse.json({ success: true });
+    if (updateError) {
+      console.error('Failed to update job:', updateError);
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: 'Job marked as failed' });
   } catch (error: any) {
     console.error('Failure webhook error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
