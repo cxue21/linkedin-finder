@@ -36,7 +36,24 @@ export default function DashboardPage() {
     const data = await response.json();
 
     if (response.ok) {
-      setJobs(data.jobs || []);
+      // ✅ ADD THIS: Check for stuck jobs on client side
+      const now = new Date();
+      const updatedJobs = data.jobs.map(job => {
+        // If job is pending for > 10 minutes, mark as failed
+        if (job.status === 'pending') {
+          const createdAt = new Date(job.created_at);
+          const minutesElapsed = (now - createdAt) / 1000 / 60;
+          
+          if (minutesElapsed > 10) {
+            // Call API to mark as failed
+            fetch(`/api/jobs/${job.id}/timeout`, { method: 'POST' });
+            return { ...job, status: 'failed', error_message: 'Job timed out' };
+          }
+        }
+        return job;
+      });
+      
+      setJobs(updatedJobs);
     } else {
       setError(data.error || 'Failed to load jobs');
     }
