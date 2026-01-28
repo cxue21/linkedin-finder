@@ -65,32 +65,45 @@ export default function DashboardPage() {
 };
 
   const handleSubmitJob = async (
-    names: InputName[],
-    inputMethod: 'manual' | 'file_upload'
-  ) => {
-    setError('');
-    setSubmitting(true);
+  names: InputName[],
+  inputMethod: 'manual' | 'file_upload'
+) => {
+  setError('');
+  setSubmitting(true);
 
-    try {
-      const response = await fetch('/api/jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ names, inputMethod }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        router.push(`/dashboard/${data.jobId}`);
-      } else {
-        setError(data.error || 'Failed to submit job');
-      }
-    } catch (err) {
-      setError('Failed to submit job');
-    } finally {
+  try {
+    // ✅ Get auth token first
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    
+    if (!session) {
+      setError('Please log in to create jobs');
       setSubmitting(false);
+      return;
     }
-  };
+
+    const response = await fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,  // ✅ Added
+      },
+      body: JSON.stringify({ names, inputMethod }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      router.push(`/dashboard/${data.jobId}`);
+    } else {
+      setError(data.error || 'Failed to submit job');
+    }
+  } catch (err) {
+    setError('Failed to submit job');
+  } finally {
+    setSubmitting(false);
+  }
+};
+
 
   return (
     <ProtectedRoute>
