@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
 export async function POST(
-  request: Request,
-  { params }: { params: { id: string } }
+  _req: Request,
+  context: { params: { id: string } }
 ) {
-  try {
-    const jobId = params.id;
+  const jobId = context.params.id;
 
+  try {
     const { error } = await supabaseServer
       .from('jobs')
       .update({

@@ -38,11 +38,11 @@ export default function DashboardPage() {
     if (response.ok) {
       // ✅ ADD THIS: Check for stuck jobs on client side
       const now = new Date();
-      const updatedJobs = data.jobs.map(job => {
+      const updatedJobs = data.jobs.map((job: Job) => { 
         // If job is pending for > 10 minutes, mark as failed
         if (job.status === 'pending') {
           const createdAt = new Date(job.created_at);
-          const minutesElapsed = (now - createdAt) / 1000 / 60;
+          const minutesElapsed = (now.getTime() - createdAt.getTime()) / 1000 / 60;
           
           if (minutesElapsed > 10) {
             // Call API to mark as failed
