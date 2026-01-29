@@ -20,11 +20,10 @@ export default function DashboardPage() {
     fetchJobs();
   }, []);
 
-  const fetchJobs = async () => {
+ const fetchJobs = async () => {
   try {
     setLoading(true);
     
-    // Get auth token
     const { data: { session } } = await supabaseClient.auth.getSession();
     
     const response = await fetch('/api/jobs', {
@@ -36,24 +35,7 @@ export default function DashboardPage() {
     const data = await response.json();
 
     if (response.ok) {
-      // ✅ ADD THIS: Check for stuck jobs on client side
-      const now = new Date();
-      const updatedJobs = data.jobs.map((job: Job) => { 
-        // If job is pending for > 10 minutes, mark as failed
-        if (job.status === 'pending') {
-          const createdAt = new Date(job.created_at);
-          const minutesElapsed = (now.getTime() - createdAt.getTime()) / 1000 / 60;
-          
-          if (minutesElapsed > 10) {
-            // Call API to mark as failed
-            fetch(`/api/jobs/${job.id}/timeout`, { method: 'POST' });
-            return { ...job, status: 'failed', error_message: 'Job timed out' };
-          }
-        }
-        return job;
-      });
-      
-      setJobs(updatedJobs);
+      setJobs(data.jobs || []);  // ✅ Simple, no timeout check
     } else {
       setError(data.error || 'Failed to load jobs');
     }
@@ -63,6 +45,7 @@ export default function DashboardPage() {
     setLoading(false);
   }
 };
+
 
   const handleSubmitJob = async (
   names: InputName[],
