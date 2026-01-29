@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';  // ✅ Add this
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Job } from '@/types';
@@ -12,6 +13,7 @@ import { supabaseClient } from '@/lib/supabase';
 
 export default function JobDetailsPage() {
   const params = useParams();
+  const router = useRouter();  // ✅ Add this
   const jobId = params.id as string;
 
   const [job, setJob] = useState<Job | null>(null);
@@ -122,36 +124,36 @@ export default function JobDetailsPage() {
 
             {/* Status Badge */}
             <div>
-              {job.status === 'pending' && (
-                <div className="flex items-center gap-2 text-blue-600">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  <span>Searching for profiles...</span>
-                </div>
-              )}
+            {job.status === 'pending' && (
+              <div className="flex items-center gap-2 text-blue-600">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <span>Searching for profiles...</span>
+              </div>
+            )}
 
-              {job.status === 'failed' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-red-600 mb-2">
-                    <span className="text-xl">❌</span>
-                    <span className="font-semibold">Job Failed</span>
-                  </div>
-                  {job.error_message && (
-                    <p className="text-red-600 text-sm">{job.error_message}</p>
-                  )}
-                  <button
-                    onClick={() => router.push('/dashboard')}
-                    className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  >
-                    Back to Dashboard
-                  </button>
+            {job.status === 'failed' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-red-600 mb-2">
+                  <span className="text-xl">❌</span>
+                  <span className="font-semibold">Job Failed</span>
                 </div>
-              )}
+                {job.error_message && (
+                  <p className="text-red-600 text-sm">{job.error_message}</p>
+                )}
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            )}
 
-              {job.status === 'completed' && (
-                <div className="text-green-600 font-semibold">
-                  ✅ Search Complete
-                </div>
-              )}
+            {job.status === 'completed' && (
+              <div className="text-green-600 font-semibold">
+                ✅ Search Complete
+              </div>
+            )}
 
 
             </div>
