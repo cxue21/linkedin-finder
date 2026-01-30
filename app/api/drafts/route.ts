@@ -1,36 +1,245 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 import type { DraftRequest, DraftResponse } from '@/types';
+
+// Create Supabase client for server-side
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Use service role key for server
+);
 
 export async function POST(req: NextRequest): Promise<NextResponse<DraftResponse>> {
   try {
+    // Get auth token from request headers
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.replace('Bearer ', '');
+
+    if (!token) {
+      return NextResponse.json(
+        { draft: '', error: 'Unauthorized - No token provided' },
+        { status: 401 }
+      );
+    }
+
+    // Verify user with token
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { draft: '', error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = (await req.json()) as DraftRequest;
-    const { name, school } = body;
+    const { name, school, company, jobId } = body;
 
     if (!name || !school) {
       return NextResponse.json(
-        { draft: '' },
+        { draft: '', error: 'Name and school are required' },
         { status: 400 }
       );
     }
 
-    // MVP: Hardcoded template
-    const template = `Hi ${name}, I came across your profile and noticed you also attended ${school}. I'm [Your Name], and I'd love to connect and learn about your experience. Would love to chat sometime!`;
+    // Fetch sender's profile
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('sender_profile')
+      .eq('user_id', user.id)
+      .single();
 
-    // In Phase 2, replace with actual DeepSeek API call:
-    // const response = await fetch('https://api.deepseek.com/...', {
-    //   headers: { 'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}` },
-    //   body: JSON.stringify({ prompt: ... })
-    // });
+    const senderProfile = profile?.sender_profile || {};
+
+    // Check if user has set up their profile
+    if (!senderProfile.education && !senderProfile.current_role) {
+      return NextResponse.json(
+        { 
+          draft: '', 
+          error: 'Please add your profile in Settings first to generate personalized messages',
+          needsProfile: true 
+        },
+        { status: 400 }
+      );
+    }
+
+    // Find commonalities
+    const commonalities: string[] = [];
+
+    // 1. Education match (HIGHEST PRIORITY)
+    if (senderProfile.education && Array.isArray(senderProfile.education)) {
+      const matchingSchool = senderProfile.education.find(
+        (senderSchool: string) => 
+          senderSchool.toLowerCase().trim() === school.toLowerCase().trim()
+      );
+      if (matchingSchool) {
+        commonalities.push(`Both attended ${matchingSchool}`);
+      }
+    }
+
+    // 2. Company match (if recipient company provided)
+    if (company && senderProfile.experience && Array.isArray(senderProfile.experience)) {
+      const matchingCompany = senderProfile.experience.find(
+        (senderCompany: string) => 
+          senderCompany.toLowerCase().trim() === company.toLowerCase().trim()
+      );
+      if (matchingCompany) {
+        commonalities.push(`Both have experience at ${matchingCompany}`);
+      }
+    }
+
+    // Generate message with DeepSeek
+    const message = await generateLinkedInMessage({
+      senderName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+      senderCompany: senderProfile.current_company,
+      senderTitle: senderProfile.current_role,
+      senderInterests: senderProfile.interests?.slice(0, 3).join(', '),
+      recipientName: name,
+      recipientSchool: school,
+      recipientCompany: company,
+      commonalities,
+      tone: 'professional'
+    });
+
+    // Optional: Store message in job if jobId provided
+    if (jobId) {
+      try {
+        const { data: job } = await supabaseAdmin
+          .from('jobs')
+          .select('generated_messages')
+          .eq('id', jobId)
+          .single();
+
+        const messages = job?.generated_messages || [];
+        messages.push({
+          recipientName: name,
+          recipientSchool: school,
+          recipientCompany: company,
+          message,
+          commonalities,
+          generatedAt: new Date().toISOString()
+        });
+
+        await supabaseAdmin
+          .from('jobs')
+          .update({ generated_messages: messages })
+          .eq('id', jobId);
+      } catch (storageError) {
+        console.error('Failed to store message:', storageError);
+      }
+    }
 
     return NextResponse.json(
-      { draft: template },
+      { 
+        draft: message,
+        commonalities 
+      },
       { status: 200 }
     );
+
   } catch (error) {
     console.error('POST /api/drafts error:', error);
     return NextResponse.json(
-      { draft: '' },
+      { 
+        draft: '', 
+        error: error instanceof Error ? error.message : 'Failed to generate message' 
+      },
       { status: 500 }
     );
   }
+}
+
+// ===== DeepSeek Integration =====
+
+interface MessageContext {
+  senderName: string;
+  senderCompany?: string;
+  senderTitle?: string;
+  senderInterests?: string;
+  recipientName: string;
+  recipientSchool: string;
+  recipientCompany?: string;
+  commonalities: string[];
+  tone?: 'professional' | 'friendly';
+}
+
+async function generateLinkedInMessage(context: MessageContext): Promise<string> {
+  const prompt = buildPrompt(context);
+
+  const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a professional LinkedIn message writer. Generate concise, personalized connection request messages that feel genuine and highlight real commonalities. Keep messages under 300 characters (LinkedIn limit). Never use emojis.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 150
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`DeepSeek API error: ${error.message || response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content.trim();
+}
+
+function buildPrompt(context: MessageContext): string {
+  const tone = context.tone || 'professional';
+  
+  let prompt = `Write a ${tone} LinkedIn connection request message.\n\n`;
+  
+  // Sender info
+  prompt += `From: ${context.senderName}`;
+  if (context.senderTitle) {
+    prompt += `, ${context.senderTitle}`;
+  }
+  if (context.senderCompany) {
+    prompt += ` at ${context.senderCompany}`;
+  }
+  prompt += '\n';
+  
+  // Recipient info
+  prompt += `To: ${context.recipientName} (${context.recipientSchool} alumni)`;
+  if (context.recipientCompany) {
+    prompt += ` at ${context.recipientCompany}`;
+  }
+  prompt += '\n\n';
+  
+  // Commonalities (if any)
+  if (context.commonalities.length > 0) {
+    prompt += 'Commonalities to highlight:\n';
+    context.commonalities.forEach(c => prompt += `- ${c}\n`);
+    prompt += '\n';
+  }
+  
+  // Sender's interests/context
+  if (context.senderInterests) {
+    prompt += `Sender's interests/focus: ${context.senderInterests}\n\n`;
+  }
+  
+  prompt += `Requirements:
+- Maximum 250 characters (strict LinkedIn connection request limit)
+- ${tone === 'professional' ? 'Professional but warm' : 'Friendly and approachable'} tone
+- ${context.commonalities.length > 0 ? 'Lead with the strongest commonality naturally' : 'Focus on school connection'}
+- Include a subtle reason to connect
+- No generic phrases like "I came across your profile"
+- Make it feel personal and genuine
+- Do NOT use emojis
+- End with a simple call-to-action`;
+
+  return prompt;
 }

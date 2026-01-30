@@ -71,12 +71,20 @@ export default function Navbar() {
           {/* Navigation Links */}
           <div className="hidden md:flex md:gap-8">
             {user && (
-              <Link
-                href="/dashboard"
-                className="text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors"
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  href="/dashboard"
+                  className="text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/settings"
+                  className="text-sm font-medium text-gray-700 hover:text-teal-600 transition-colors"
+                >
+                  Settings
+                </Link>
+              </>
             )}
           </div>
 
@@ -107,6 +115,12 @@ export default function Navbar() {
                   className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 transition-colors"
                 >
                   Sign Up
+                </Link>
+                <Link 
+                  href="/settings" 
+                  className="text-gray-700 hover:text-gray-900 font-medium"
+                >
+                  Settings
                 </Link>
               </div>
             )}

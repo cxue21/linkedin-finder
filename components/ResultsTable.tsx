@@ -6,9 +6,10 @@ import MessageDraftModal from './MessageDraftModal';
 
 interface ResultsTableProps {
   results: JobResult[];
+  jobId?: string;  // NEW: Add jobId prop
 }
 
-export default function ResultsTable({ results }: ResultsTableProps) {
+export default function ResultsTable({ results, jobId }: ResultsTableProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<JobResult | null>(null);
 
@@ -103,7 +104,7 @@ export default function ResultsTable({ results }: ResultsTableProps) {
                       onClick={() => handleGenerateDraft(result)}
                       className="rounded-lg bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700 transition"
                     >
-                      Generate Draft
+                      ✨ Generate Message
                     </button>
                   )}
                 </td>
@@ -121,6 +122,8 @@ export default function ResultsTable({ results }: ResultsTableProps) {
           name={selectedResult.name}
           school={selectedResult.school}
           linkedInUrl={selectedResult.linkedInUrl || ''}
+          company={undefined}  // Can add later if you capture company in results
+          jobId={jobId}        // NEW: Pass jobId
         />
       )}
     </>

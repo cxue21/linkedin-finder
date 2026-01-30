@@ -191,7 +191,7 @@ export default function JobDetailsPage() {
           {job.status === 'completed' ? (
             <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
               {job.results.length > 0 ? (
-                <ResultsTable results={job.results} />
+                <ResultsTable results={job.results} jobId={jobId} />
               ) : (
                 <p className="text-center text-gray-600 py-8">
                   No results found

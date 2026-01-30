@@ -64,10 +64,15 @@ export interface DraftRequest {
   name: string;
   school: string;
   linkedInUrl: string | null;
+  company?: string;      // ADDED
+  jobId?: string;        // ADDED
 }
 
 export interface DraftResponse {
   draft: string;
+  commonalities?: string[];  // ADDED
+  error?: string;            // ADDED
+  needsProfile?: boolean;    // ADDED
 }
 
 export interface N8nWebhookRequest {
