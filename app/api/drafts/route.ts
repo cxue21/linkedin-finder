@@ -202,7 +202,6 @@ function buildPrompt(context: MessageContext): string {
     senderName,
     senderCompany,
     senderTitle,
-    senderInterests,
     recipientName,
     recipientSchool,
     recipientCompany,
