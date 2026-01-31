@@ -183,8 +183,8 @@ async function generateLinkedInMessage(context: MessageContext): Promise<string>
           content: prompt
         }
       ],
-      temperature: 0.7,
-      max_tokens: 150
+      temperature: 0.3,
+      max_tokens: 200
     })
   });
 
@@ -198,8 +198,6 @@ async function generateLinkedInMessage(context: MessageContext): Promise<string>
 }
 
 function buildPrompt(context: MessageContext): string {
-  const tone = context.tone || 'professional';
-
   const {
     senderName,
     senderCompany,
@@ -211,57 +209,58 @@ function buildPrompt(context: MessageContext): string {
     commonalities,
   } = context;
 
-  const strongestCommonality = commonalities[0] || null;
+  const firstName = recipientName.split(' ')[0];
+  const strongestCommonality = commonalities[0];
 
-  let prompt = `Write a ${tone} LinkedIn connection request message.\n\n`;
+  let prompt = `Generate a professional LinkedIn connection request message (max 290 chars).\n\n`;
 
-  // Explicit sender info
-  prompt += `Sender:\n`;
+  // Explicit sender + recipient separation
+  prompt += `SENDER (you):\n`;
   prompt += `- Name: ${senderName}\n`;
-  if (senderTitle) prompt += `- Role: ${senderTitle}\n`;
+  if (senderTitle) prompt += `- Title: ${senderTitle}\n`;
   if (senderCompany) prompt += `- Company: ${senderCompany}\n`;
-  if (senderInterests) prompt += `- Interests: ${senderInterests}\n`;
   prompt += `\n`;
 
-  // Explicit recipient info
-  prompt += `Recipient:\n`;
+  prompt += `RECIPIENT:\n`;
   prompt += `- Name: ${recipientName}\n`;
   prompt += `- School: ${recipientSchool}\n`;
   if (recipientCompany) prompt += `- Company: ${recipientCompany}\n`;
   prompt += `\n`;
 
-  // Explicit commonalities list
+  // ONLY verified commonalities
   if (commonalities.length > 0) {
-    prompt += `Verified commonalities between sender and recipient:\n`;
-    for (const c of commonalities) {
-      prompt += `- ${c}\n`;
-    }
+    prompt += `✅ VERIFIED COMMONALITIES (use these ONLY):\n`;
+    commonalities.forEach((c, i) => {
+      prompt += `${i + 1}. ${c}\n`;
+    });
     prompt += `\n`;
   } else {
-    prompt += `There are NO verified commonalities between sender and recipient yet.\n\n`;
+    prompt += `⚠️ NO VERIFIED COMMONALITIES - use school connection context only\n\n`;
   }
 
-  // Very explicit rules
-  prompt += `Requirements:\n`;
-  prompt += `- Length: 2–4 sentences, keep it clearly under 300 characters.\n`;
-  prompt += `- Tone: strictly professional and polite, not casual, no emojis.\n`;
-  prompt += `- Structure:\n`;
-  prompt += `  1) Greeting + recipient's first name.\n`;
-  prompt += `  2) One sentence on who the sender is (role/company) and why they are reaching out.\n`;
-  prompt += `  3) One sentence that uses ONLY the verified commonalities listed above, if any. Do not invent additional similarities.\n`;
-  prompt += `  4) One sentence with a clear, simple call-to-action to connect.\n`;
-  prompt += `- If there is an education commonality, you may mention being alumni ONLY if both are from the same school and that is explicitly stated in the commonalities list.\n`;
-  prompt += `- If sender and recipient studied at different schools, DO NOT use phrases like "fellow alum", "same school", or "alumni" together.\n`;
-  prompt += `- Do NOT say things that are not guaranteed by the data above (no guessing of schools, degrees, or locations).\n`;
-  prompt += `- Avoid generic phrases like "I came across your profile" or "I hope you're doing well".\n`;
-  prompt += `- End with a simple, professional call-to-action such as asking to connect or briefly chat.\n`;
+  prompt += `STRICT RULES:\n`;
+  prompt += `1. Structure: Greeting → Who you are → School connection → CTA\n`;
+  prompt += `2. Length: 180-280 characters (count them)\n`;
+  prompt += `3. Greeting: "Hi {{firstName}}," or "Hello {{firstName}},"\n`;
+  prompt += `4. Mention SENDER school ONLY if it's a verified commonality\n`;
+  prompt += `5. ALWAYS mention recipient's ${recipientSchool} connection\n`;
+  prompt += `6. CTA: "Would you be open to connecting?" OR "Looking forward to connecting."\n`;
+  prompt += `7. Professional tone - no "fellow alum" unless verified\n`;
+  prompt += `8. End with "Best regards, {{senderName}}"\n\n`;
+
+  prompt += `EXAMPLE (when schools match):\n`;
+  prompt += `"Hi John, I'm a Product Manager at ByteDance and noticed we both attended University of Hong Kong. I'd value connecting with fellow alumni working in tech. Would you be open to connecting?\nBest regards, YourName"\n\n`;
+
+  prompt += `EXAMPLE (different schools):\n`;
+  prompt += `"Hi Sarah, I'm a Product Manager at ByteDance reaching out to CityU alumni in tech. Your background at [Company] caught my attention. Would you be open to connecting?\nBest regards, YourName"\n\n`;
 
   if (strongestCommonality) {
-    prompt += `\nFocus especially on this strongest commonality: "${strongestCommonality}".\n`;
-  } else {
-    prompt += `\nIf there are no commonalities, focus on the recipient's school or company as context, without claiming shared background.\n`;
+    prompt += `LEAD WITH: "${strongestCommonality}"\n\n`;
   }
+
+  prompt += `Generate the message now:`;
 
   return prompt;
 }
+
 

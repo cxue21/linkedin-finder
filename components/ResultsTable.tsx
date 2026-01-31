@@ -81,6 +81,10 @@ export default function ResultsTable({ results, jobId }: ResultsTableProps) {
                       href={result.linkedInUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => {
+                        // Do nothing - let browser handle new tab naturally
+                        e.stopPropagation();
+                      }}
                       className="text-teal-600 hover:text-teal-700 hover:underline"
                     >
                       View Profile →
