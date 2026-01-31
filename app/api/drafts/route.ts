@@ -240,7 +240,7 @@ function buildPrompt(context: MessageContext): string {
   prompt += `STRICT RULES:\n`;
   prompt += `1. Structure: Greeting → Who you are → School connection → CTA\n`;
   prompt += `2. Length: 180-280 characters (count them)\n`;
-  prompt += `3. Greeting: "Hi {{firstName}}," or "Hello {{firstName}},"\n`;
+  prompt += `3. Greeting: "Hi ${{firstName}}," or "Hello ${{firstName}},"\n`;
   prompt += `4. Mention SENDER school ONLY if it's a verified commonality\n`;
   prompt += `5. ALWAYS mention recipient's ${recipientSchool} connection\n`;
   prompt += `6. CTA: "Would you be open to connecting?" OR "Looking forward to connecting."\n`;
