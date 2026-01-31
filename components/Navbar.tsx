@@ -116,12 +116,6 @@ export default function Navbar() {
                 >
                   Sign Up
                 </Link>
-                <Link 
-                  href="/settings" 
-                  className="text-gray-700 hover:text-gray-900 font-medium"
-                >
-                  Settings
-                </Link>
               </div>
             )}
           </div>

@@ -176,7 +176,7 @@ async function generateLinkedInMessage(context: MessageContext): Promise<string>
       messages: [
         {
           role: 'system',
-          content: 'You are a professional LinkedIn message writer. Generate concise, personalized connection request messages that feel genuine and highlight real commonalities. Keep messages under 300 characters (LinkedIn limit). Never use emojis.'
+          content: 'You are a professional LinkedIn message writer. Generate short, structured, personalized connection requests that highlight only real, verified commonalities. Keep messages under 300 characters. Never use emojis or casual slang.'
         },
         {
           role: 'user',
@@ -199,47 +199,69 @@ async function generateLinkedInMessage(context: MessageContext): Promise<string>
 
 function buildPrompt(context: MessageContext): string {
   const tone = context.tone || 'professional';
-  
+
+  const {
+    senderName,
+    senderCompany,
+    senderTitle,
+    senderInterests,
+    recipientName,
+    recipientSchool,
+    recipientCompany,
+    commonalities,
+  } = context;
+
+  const strongestCommonality = commonalities[0] || null;
+
   let prompt = `Write a ${tone} LinkedIn connection request message.\n\n`;
-  
-  // Sender info
-  prompt += `From: ${context.senderName}`;
-  if (context.senderTitle) {
-    prompt += `, ${context.senderTitle}`;
+
+  // Explicit sender info
+  prompt += `Sender:\n`;
+  prompt += `- Name: ${senderName}\n`;
+  if (senderTitle) prompt += `- Role: ${senderTitle}\n`;
+  if (senderCompany) prompt += `- Company: ${senderCompany}\n`;
+  if (senderInterests) prompt += `- Interests: ${senderInterests}\n`;
+  prompt += `\n`;
+
+  // Explicit recipient info
+  prompt += `Recipient:\n`;
+  prompt += `- Name: ${recipientName}\n`;
+  prompt += `- School: ${recipientSchool}\n`;
+  if (recipientCompany) prompt += `- Company: ${recipientCompany}\n`;
+  prompt += `\n`;
+
+  // Explicit commonalities list
+  if (commonalities.length > 0) {
+    prompt += `Verified commonalities between sender and recipient:\n`;
+    for (const c of commonalities) {
+      prompt += `- ${c}\n`;
+    }
+    prompt += `\n`;
+  } else {
+    prompt += `There are NO verified commonalities between sender and recipient yet.\n\n`;
   }
-  if (context.senderCompany) {
-    prompt += ` at ${context.senderCompany}`;
+
+  // Very explicit rules
+  prompt += `Requirements:\n`;
+  prompt += `- Length: 2–4 sentences, keep it clearly under 300 characters.\n`;
+  prompt += `- Tone: strictly professional and polite, not casual, no emojis.\n`;
+  prompt += `- Structure:\n`;
+  prompt += `  1) Greeting + recipient's first name.\n`;
+  prompt += `  2) One sentence on who the sender is (role/company) and why they are reaching out.\n`;
+  prompt += `  3) One sentence that uses ONLY the verified commonalities listed above, if any. Do not invent additional similarities.\n`;
+  prompt += `  4) One sentence with a clear, simple call-to-action to connect.\n`;
+  prompt += `- If there is an education commonality, you may mention being alumni ONLY if both are from the same school and that is explicitly stated in the commonalities list.\n`;
+  prompt += `- If sender and recipient studied at different schools, DO NOT use phrases like "fellow alum", "same school", or "alumni" together.\n`;
+  prompt += `- Do NOT say things that are not guaranteed by the data above (no guessing of schools, degrees, or locations).\n`;
+  prompt += `- Avoid generic phrases like "I came across your profile" or "I hope you're doing well".\n`;
+  prompt += `- End with a simple, professional call-to-action such as asking to connect or briefly chat.\n`;
+
+  if (strongestCommonality) {
+    prompt += `\nFocus especially on this strongest commonality: "${strongestCommonality}".\n`;
+  } else {
+    prompt += `\nIf there are no commonalities, focus on the recipient's school or company as context, without claiming shared background.\n`;
   }
-  prompt += '\n';
-  
-  // Recipient info
-  prompt += `To: ${context.recipientName} (${context.recipientSchool} alumni)`;
-  if (context.recipientCompany) {
-    prompt += ` at ${context.recipientCompany}`;
-  }
-  prompt += '\n\n';
-  
-  // Commonalities (if any)
-  if (context.commonalities.length > 0) {
-    prompt += 'Commonalities to highlight:\n';
-    context.commonalities.forEach(c => prompt += `- ${c}\n`);
-    prompt += '\n';
-  }
-  
-  // Sender's interests/context
-  if (context.senderInterests) {
-    prompt += `Sender's interests/focus: ${context.senderInterests}\n\n`;
-  }
-  
-  prompt += `Requirements:
-- Maximum 250 characters (strict LinkedIn connection request limit)
-- ${tone === 'professional' ? 'Professional but warm' : 'Friendly and approachable'} tone
-- ${context.commonalities.length > 0 ? 'Lead with the strongest commonality naturally' : 'Focus on school connection'}
-- Include a subtle reason to connect
-- No generic phrases like "I came across your profile"
-- Make it feel personal and genuine
-- Do NOT use emojis
-- End with a simple call-to-action`;
 
   return prompt;
 }
+
