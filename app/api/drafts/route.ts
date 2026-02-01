@@ -211,30 +211,36 @@ function buildPrompt(context: MessageContext): string {
 
   const firstName = recipientName.split(' ')[0];
 
-  let prompt = `Craft a personalized, professional LinkedIn connection request (200-280 chars).\n\n`;
+  let prompt = `ALWAYS start with: "Hi ${firstName}, I'm ${senderName}, a ${senderTitle} at ${senderCompany}."\n\n`;
 
   prompt += `CONTEXT:\n`;
-  prompt += `- You: ${senderName}, ${senderTitle} @ ${senderCompany || 'your company'}\n`;
-  prompt += `- Interests: ${senderInterests || 'your field'}\n`;
+  prompt += `- You: ${senderTitle} @ ${senderCompany}, interests: ${senderInterests || 'your field'}\n`;
   prompt += `- Them: ${recipientName} (${recipientSchool}${recipientCompany ? `, ${recipientCompany}` : ''})\n`;
   
   if (commonalities.length > 0) {
-    prompt += `- ✅ SHARED: ${commonalities.join(', ')}\n`;
+    prompt += `- ✅ ONLY verified commonalities: ${commonalities.join('; ')}\n`;
+  } else {
+    prompt += `- ⚠️ NO verified commonalities\n`;
   }
   
-  prompt += `\nGOAL: Make them want to connect back. Be specific about:\n`;
-  prompt += `1. Who you are + your world (${senderCompany || 'your company'}, ${senderTitle}, ${senderInterests || 'your field'})\n`;
-  prompt += `2. Why their profile interests you (${recipientSchool}, ${recipientCompany || 'their field'})\n`;
-  prompt += `3. Subtle value exchange ({{school}} alumni insights, {{field}} perspectives)\n`;
-  prompt += `4. Warm professional CTA\n\n`;
+  prompt += `\nRULES (CRITICAL):\n`;
+  prompt += `1. EXACT opening: "Hi ${firstName}, I'm ${senderName}, a ${senderTitle} at ${senderCompany}."\n`;
+  prompt += `2. NO "fellow alumni" or "fellow [school]" UNLESS ${recipientSchool} is in verified commonalities\n`;
+  prompt += `3. 3 sentences total:\n`;
+  prompt += `   a) Reference ${recipientSchool} connection (don't claim you attended it)\n`;
+  prompt += `   b) Mention why their work interests you\n`;
+  prompt += `   c) Professional CTA: "Would you be open to connecting?"\n`;
+  prompt += `4. End: "Best regards, ${senderName}"\n`;
+  prompt += `5. 200-280 chars\n\n`;
 
-  prompt += `TECHNIQUES:\n`;
-  prompt += `- Reference ${recipientSchool} alumni network\n`;
-  prompt += `- Mention shared field (${senderInterests || senderTitle || 'your expertise'})\n`;
-  prompt += `- Compliment their ${recipientCompany || 'role/company'}\n`;
-  prompt += `- Offer value ("love hearing {{school}} alumni perspectives")\n\n`;
+  prompt += `EXAMPLE (different schools):\n`;
+  prompt += `"Hi Sarah, I'm Cindy Xue, a Product Manager at ByteDance.\n\n`;
+  prompt += `Reaching out to CityU alumni doing impressive work in tech. Your background at Meta caught my attention.\n\n`;
+  prompt += `Would you be open to connecting?\n\n`;
+  prompt += `Best regards,\n`;
+  prompt += `Cindy Xue"\n\n`;
 
-  prompt += `Write for ${firstName}:`;
+  prompt += `Generate for ${firstName}:`;
 
   return prompt;
 }
