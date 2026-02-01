@@ -6,7 +6,7 @@ import MessageDraftModal from './MessageDraftModal';
 
 interface ResultsTableProps {
   results: JobResult[];
-  jobId?: string;  // NEW: Add jobId prop
+  jobId?: string;
 }
 
 export default function ResultsTable({ results, jobId }: ResultsTableProps) {
@@ -77,18 +77,18 @@ export default function ResultsTable({ results, jobId }: ResultsTableProps) {
                 </td>
                 <td className="px-6 py-4 text-sm">
                   {result.linkedInUrl ? (
-                    <a
-                      href={result.linkedInUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <span
+                      className="text-teal-600 hover:text-teal-700 hover:underline cursor-pointer inline-block"
                       onClick={(e) => {
-                        // Do nothing - let browser handle new tab naturally
+                        e.preventDefault();
                         e.stopPropagation();
+                        if (result.linkedInUrl) {
+                          window.open(result.linkedInUrl, '_blank', 'noopener,noreferrer');
+                        }
                       }}
-                      className="text-teal-600 hover:text-teal-700 hover:underline"
                     >
                       View Profile →
-                    </a>
+                    </span>
                   ) : (
                     <span className="text-gray-400">Not found</span>
                   )}
@@ -126,8 +126,8 @@ export default function ResultsTable({ results, jobId }: ResultsTableProps) {
           name={selectedResult.name}
           school={selectedResult.school}
           linkedInUrl={selectedResult.linkedInUrl || ''}
-          company={undefined}  // Can add later if you capture company in results
-          jobId={jobId}        // NEW: Pass jobId
+          company={undefined}
+          jobId={jobId}
         />
       )}
     </>

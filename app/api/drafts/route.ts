@@ -211,55 +211,55 @@ function buildPrompt(context: MessageContext): string {
   const firstName = recipientName.split(' ')[0];
   const strongestCommonality = commonalities[0];
 
-  let prompt = `Generate a professional LinkedIn connection request message (max 290 chars).\n\n`;
+  let prompt = `Generate a professional LinkedIn connection request message.\n\n`;
 
-  // Explicit sender + recipient separation
-  prompt += `SENDER (you):\n`;
-  prompt += `- Name: ${senderName}\n`;
+  prompt += `SENDER INFO:\n`;
+  prompt += `- Name: "${senderName}" (use this exact name in signature)\n`;
   if (senderTitle) prompt += `- Title: ${senderTitle}\n`;
   if (senderCompany) prompt += `- Company: ${senderCompany}\n`;
   prompt += `\n`;
 
-  prompt += `RECIPIENT:\n`;
-  prompt += `- Name: ${recipientName}\n`;
+  prompt += `RECIPIENT INFO:\n`;
+  prompt += `- Name: ${recipientName} (first name: ${firstName})\n`;
   prompt += `- School: ${recipientSchool}\n`;
   if (recipientCompany) prompt += `- Company: ${recipientCompany}\n`;
   prompt += `\n`;
 
-  // ONLY verified commonalities
   if (commonalities.length > 0) {
-    prompt += `✅ VERIFIED COMMONALITIES (use these ONLY):\n`;
-    commonalities.forEach((c, i) => {
-      prompt += `${i + 1}. ${c}\n`;
-    });
+    prompt += `✅ VERIFIED COMMONALITIES:\n`;
+    commonalities.forEach((c, i) => prompt += `${i+1}. ${c}\n`);
     prompt += `\n`;
-  } else {
-    prompt += `⚠️ NO VERIFIED COMMONALITIES - use school connection context only\n\n`;
   }
 
-  prompt += `STRICT RULES:\n`;
-  prompt += `1. Structure: Greeting → Who you are → School connection → CTA\n`;
-  prompt += `2. Length: 180-280 characters (count them)\n`;
-  prompt += `3. Greeting: "Hi ${{firstName}}," or "Hello ${{firstName}},"\n`;
-  prompt += `4. Mention SENDER school ONLY if it's a verified commonality\n`;
-  prompt += `5. ALWAYS mention recipient's ${recipientSchool} connection\n`;
-  prompt += `6. CTA: "Would you be open to connecting?" OR "Looking forward to connecting."\n`;
-  prompt += `7. Professional tone - no "fellow alum" unless verified\n`;
-  prompt += `8. End with "Best regards, {{senderName}}"\n\n`;
-
-  prompt += `EXAMPLE (when schools match):\n`;
-  prompt += `"Hi John, I'm a Product Manager at ByteDance and noticed we both attended University of Hong Kong. I'd value connecting with fellow alumni working in tech. Would you be open to connecting?\nBest regards, YourName"\n\n`;
-
-  prompt += `EXAMPLE (different schools):\n`;
-  prompt += `"Hi Sarah, I'm a Product Manager at ByteDance reaching out to CityU alumni in tech. Your background at [Company] caught my attention. Would you be open to connecting?\nBest regards, YourName"\n\n`;
-
+  prompt += `EXACT FORMAT REQUIRED (copy this structure):\n`;
+  prompt += `\n`;
+  prompt += `Hi {{firstName}},\n`;
+  prompt += `\n`;
+  prompt += `I am {{senderName}}, a {{senderTitle}} at {{senderCompany}}.\n`;
+  prompt += `\n`;
   if (strongestCommonality) {
-    prompt += `LEAD WITH: "${strongestCommonality}"\n\n`;
+    prompt += `{{strongestCommonality}}. `;
+  } else {
+    prompt += `I'm reaching out to {{recipientSchool}} alumni working in {{recipientCompany || 'your field'}}. `;
   }
+  prompt += `Your background caught my attention and I'd value connecting with professionals in your space.\n`;
+  prompt += `\n`;
+  prompt += `Would you be open to connecting?\n`;
+  prompt += `\n`;
+  prompt += `Best regards,\n`;
+  prompt += `{{senderName}}\n`;
+  prompt += `\n`;
 
-  prompt += `Generate the message now:`;
+  prompt += `RULES:\n`;
+  prompt += `- Fill in ONLY the {{placeholders}} above with the exact info provided\n`;
+  prompt += `- Do NOT add extra sentences or change structure\n`;
+  prompt += `- Keep under 290 characters\n`;
+  prompt += `- Professional tone only\n`;
+  prompt += `- Use "${firstName}" in greeting\n`;
+  prompt += `- Use "${senderName}" as signature (exact spelling)\n`;
 
   return prompt;
 }
+
 
 
