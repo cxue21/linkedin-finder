@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get profile text
-    const { profileText } = await req.json();
+    // ✅ FIXED: Get BOTH profileText AND userName from request
+    const { profileText, userName } = await req.json();
     
     if (!profileText || profileText.trim().length < 50) {
       return NextResponse.json(
@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       .update({
         sender_profile: profile,
         profile_raw_text: profileText,
+        full_name: userName || '',
         updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id);
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// ✅ RE-ADDED: The missing function!
 async function extractProfileWithDeepSeek(profileText: string) {
   const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
     method: 'POST',

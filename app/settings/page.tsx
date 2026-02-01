@@ -10,6 +10,7 @@ const supabase = createClient(
 );
 
 export default function SettingsPage() {
+  const [userName, setUserName] = useState('');           // ✅ NEW: Name state
   const [profileText, setProfileText] = useState('');
   const [parsedProfile, setParsedProfile] = useState<any>(null);
   const [parsing, setParsing] = useState(false);
@@ -25,11 +26,12 @@ export default function SettingsPage() {
 
     const { data } = await supabase
       .from('profiles')
-      .select('sender_profile, profile_raw_text')
+      .select('sender_profile, profile_raw_text, full_name')  // ✅ ADDED: full_name
       .eq('user_id', user.id)
       .single();
 
     if (data) {
+      setUserName(data.full_name || '');                      // ✅ LOAD name
       setProfileText(data.profile_raw_text || '');
       setParsedProfile(data.sender_profile);
     }
@@ -52,14 +54,17 @@ export default function SettingsPage() {
         throw new Error('Not authenticated');
       }
 
-      // Call API to parse with DeepSeek
+      // Call API to parse with DeepSeek - SEND NAME TOO ✅
       const response = await fetch('/api/profile/parse', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ profileText })
+        body: JSON.stringify({ 
+          profileText,
+          userName                              // ✅ SEND name to API
+        })
       });
 
       const data = await response.json();
@@ -97,6 +102,23 @@ export default function SettingsPage() {
           </p>
         </div>
 
+        {/* ✅ NEW: Full Name Field */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Your Full Name
+          </label>
+          <input
+            type="text"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            placeholder="Cindy Xue"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            This will appear in your personalized messages (e.g. "Best regards, Cindy Xue")
+          </p>
+        </div>
+
         {/* Text area */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -111,7 +133,7 @@ Example:
 I'm a Product Manager at Acme Corp with 5 years of experience in B2B SaaS. 
 I studied Computer Science at the University of Hong Kong and previously worked at Google and Stripe.
 Passionate about AI, developer tools, and building products that scale."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             rows={12}
           />
           <p className="text-xs text-gray-500 mt-1">

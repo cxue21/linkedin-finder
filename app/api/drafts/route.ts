@@ -176,14 +176,14 @@ async function generateLinkedInMessage(context: MessageContext): Promise<string>
       messages: [
         {
           role: 'system',
-          content: 'You are a professional LinkedIn message writer. Generate short, structured, personalized connection requests that highlight only real, verified commonalities. Keep messages under 300 characters. Never use emojis or casual slang.'
+          content: 'You are a professional LinkedIn message writer. Generate short, structured, personalized connection requests that highlight only real, verified commonalities. Keep messages under 500 characters. Never use emojis or casual slang.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      temperature: 0.3,
+      temperature: 0.6,
       max_tokens: 200
     })
   });
@@ -202,6 +202,7 @@ function buildPrompt(context: MessageContext): string {
     senderName,
     senderCompany,
     senderTitle,
+    senderInterests,
     recipientName,
     recipientSchool,
     recipientCompany,
@@ -209,57 +210,31 @@ function buildPrompt(context: MessageContext): string {
   } = context;
 
   const firstName = recipientName.split(' ')[0];
-  const strongestCommonality = commonalities[0];
 
-  let prompt = `Generate a professional LinkedIn connection request message.\n\n`;
+  let prompt = `Craft a personalized, professional LinkedIn connection request (200-280 chars).\n\n`;
 
-  prompt += `SENDER INFO:\n`;
-  prompt += `- Name: "${senderName}" (use this exact name in signature)\n`;
-  if (senderTitle) prompt += `- Title: ${senderTitle}\n`;
-  if (senderCompany) prompt += `- Company: ${senderCompany}\n`;
-  prompt += `\n`;
-
-  prompt += `RECIPIENT INFO:\n`;
-  prompt += `- Name: ${recipientName} (first name: ${firstName})\n`;
-  prompt += `- School: ${recipientSchool}\n`;
-  if (recipientCompany) prompt += `- Company: ${recipientCompany}\n`;
-  prompt += `\n`;
-
+  prompt += `CONTEXT:\n`;
+  prompt += `- You: ${senderName}, ${senderTitle} @ ${senderCompany || 'your company'}\n`;
+  prompt += `- Interests: ${senderInterests || 'your field'}\n`;
+  prompt += `- Them: ${recipientName} (${recipientSchool}${recipientCompany ? `, ${recipientCompany}` : ''})\n`;
+  
   if (commonalities.length > 0) {
-    prompt += `✅ VERIFIED COMMONALITIES:\n`;
-    commonalities.forEach((c, i) => prompt += `${i+1}. ${c}\n`);
-    prompt += `\n`;
+    prompt += `- ✅ SHARED: ${commonalities.join(', ')}\n`;
   }
+  
+  prompt += `\nGOAL: Make them want to connect back. Be specific about:\n`;
+  prompt += `1. Who you are + your world (${senderCompany || 'your company'}, ${senderTitle}, ${senderInterests || 'your field'})\n`;
+  prompt += `2. Why their profile interests you (${recipientSchool}, ${recipientCompany || 'their field'})\n`;
+  prompt += `3. Subtle value exchange ({{school}} alumni insights, {{field}} perspectives)\n`;
+  prompt += `4. Warm professional CTA\n\n`;
 
-  prompt += `EXACT FORMAT REQUIRED (copy this structure):\n`;
-  prompt += `\n`;
-  prompt += `Hi {{firstName}},\n`;
-  prompt += `\n`;
-  prompt += `I am {{senderName}}, a {{senderTitle}} at {{senderCompany}}.\n`;
-  prompt += `\n`;
-  if (strongestCommonality) {
-    prompt += `{{strongestCommonality}}. `;
-  } else {
-    prompt += `I'm reaching out to {{recipientSchool}} alumni working in {{recipientCompany || 'your field'}}. `;
-  }
-  prompt += `Your background caught my attention and I'd value connecting with professionals in your space.\n`;
-  prompt += `\n`;
-  prompt += `Would you be open to connecting?\n`;
-  prompt += `\n`;
-  prompt += `Best regards,\n`;
-  prompt += `{{senderName}}\n`;
-  prompt += `\n`;
+  prompt += `TECHNIQUES:\n`;
+  prompt += `- Reference ${recipientSchool} alumni network\n`;
+  prompt += `- Mention shared field (${senderInterests || senderTitle || 'your expertise'})\n`;
+  prompt += `- Compliment their ${recipientCompany || 'role/company'}\n`;
+  prompt += `- Offer value ("love hearing {{school}} alumni perspectives")\n\n`;
 
-  prompt += `RULES:\n`;
-  prompt += `- Fill in ONLY the {{placeholders}} above with the exact info provided\n`;
-  prompt += `- Do NOT add extra sentences or change structure\n`;
-  prompt += `- Keep under 290 characters\n`;
-  prompt += `- Professional tone only\n`;
-  prompt += `- Use "${firstName}" in greeting\n`;
-  prompt += `- Use "${senderName}" as signature (exact spelling)\n`;
+  prompt += `Write for ${firstName}:`;
 
   return prompt;
 }
-
-
-
