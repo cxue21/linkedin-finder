@@ -41,25 +41,26 @@ export async function POST(req: NextRequest): Promise<NextResponse<DraftResponse
       );
     }
 
-    // Fetch sender's profile
-    const { data: profile } = await supabaseAdmin
+    // Fetch sender's profile AND full name
+    const { data: profileData } = await supabaseAdmin
       .from('profiles')
-      .select('sender_profile')
+      .select('sender_profile, full_name')  // ✅ Include full_name
       .eq('user_id', user.id)
       .single();
 
-    const senderProfile = profile?.sender_profile || {};
+    const senderProfile = profileData?.sender_profile || {};
+    const senderFullName = profileData?.full_name || 
+      user.user_metadata?.full_name || 
+      user.email?.split('@')[0] || 
+      'User';
 
     // Check if user has set up their profile
     if (!senderProfile.education && !senderProfile.current_role) {
-      return NextResponse.json(
-        { 
-          draft: '', 
-          error: 'Please add your profile in Settings first to generate personalized messages',
-          needsProfile: true 
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        draft: '', 
+        error: 'Please add your profile in Settings first to generate personalized messages',
+        needsProfile: true 
+      }, { status: 400 });
     }
 
     // Find commonalities
@@ -87,9 +88,9 @@ export async function POST(req: NextRequest): Promise<NextResponse<DraftResponse
       }
     }
 
-    // Generate message with DeepSeek
+    // Generate message with sender's REAL full name
     const message = await generateLinkedInMessage({
-      senderName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+      senderName: senderFullName,  // ✅ Now uses "Cindy Xue" from Settings
       senderCompany: senderProfile.current_company,
       senderTitle: senderProfile.current_role,
       senderInterests: senderProfile.interests?.slice(0, 3).join(', '),
@@ -99,6 +100,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<DraftResponse
       commonalities,
       tone: 'professional'
     });
+
+
 
     // Optional: Store message in job if jobId provided
     if (jobId) {
